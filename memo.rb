@@ -8,18 +8,18 @@ helpers do
   def h(text)
     Rack::Utils.escape_html(text)
   end
+end
 
-  def get_saved_memo_path(id)
-    "data/memos_#{id}.json"
-  end
+def get_saved_memo_path(id)
+  "data/memos_#{id}.json"
+end
 
-  def read_memo_json
-    file_path = get_saved_memo_path(params[:id])
-    File.exist?(file_path) ? (memos = File.open(file_path) { |file| JSON.parse(file.read) }) : (redirect to('not_found'))
-    @title = memos['title']
-    @content = memos['content']
-    @id = memos['id']
-  end
+def read_memo_json
+  file_path = get_saved_memo_path(params[:id])
+  File.exist?(file_path) ? (memos = File.open(file_path) { |file| JSON.parse(file.read) }) : (redirect to('not_found'))
+  @title = memos['title']
+  @content = memos['content']
+  @id = memos['id']
 end
 
 get '/' do
