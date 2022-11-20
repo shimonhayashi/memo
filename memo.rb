@@ -49,7 +49,7 @@ end
 
 def read_memo(id)
   result = conn.exec_params('SELECT * FROM memos WHERE id = $1;', [id])
-  result.tuple_values(0)
+  result.first
 end
 
 get '/memos/:id' do
