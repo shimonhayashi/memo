@@ -54,15 +54,13 @@ end
 
 get '/memos/:id' do
   memo = read_memo(params[:id])
-  @title = memo[1]
-  @content = memo[2]
+  @memo = memo
   erb :detail
 end
 
 get '/memos/:id/edit' do
   memo = read_memo(params[:id])
-  @title = memo[1]
-  @content = memo[2]
+  @memo = memo
   erb :edit
 end
 
