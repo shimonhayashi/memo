@@ -14,9 +14,10 @@ https://www.loom.com/share/13d3a713009644bf89a34ee67e874cae
 
 # Requirement
 - 下記のパッケージをインストールする必要があります。
-require 'sinatra' #sinatraのパッケージです  
-require 'sinatra/reloader' #sinatraを再起動することなくファイル修正ができます  
-require 'json'　#jsonのメソッドを使うために必要です。  
+require 'sinatra' # sinatraのパッケージです  
+require 'sinatra/reloader' # sinatraを再起動することなくファイル修正ができます  
+require 'pg'　# PostgreSQLの接続に必要です。
+※PostgreSQLの事前インストールが必要です。
 
 # Usage
 - 使い方は下記コマンドを入れます。

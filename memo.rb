@@ -2,7 +2,7 @@
 
 require 'sinatra'
 require 'sinatra/reloader'
-require 'json'
+require 'pg'
 
 helpers do
   def h(text)
@@ -10,16 +10,17 @@ helpers do
   end
 end
 
-def get_saved_memo_path(id)
-  "data/memos_#{id}.json"
+def conn
+  @conn ||= PG.connect(dbname: 'postgres')
 end
 
-def read_memo_json
-  file_path = get_saved_memo_path(params[:id])
-  File.exist?(file_path) ? (memos = File.open(file_path) { |file| JSON.parse(file.read) }) : (redirect to('not_found'))
-  @title = memos['title']
-  @content = memos['content']
-  @id = memos['id']
+configure do
+  result = conn.exec("SELECT * FROM information_schema.tables WHERE table_name = 'memos'")
+  conn.exec('CREATE TABLE memos (id serial, title varchar(255), content text, created timestamp default CURRENT_TIMESTAMP)') if result.values.empty?
+end
+
+def read_memos
+  conn.exec('SELECT * FROM memos order by created DESC')
 end
 
 get '/' do
@@ -27,44 +28,60 @@ get '/' do
 end
 
 get '/memos' do
-  @memos = Dir.glob('data/*').map { |file| JSON.parse(File.open(file).read) }
-  @memos = @memos.sort_by { |file| file['time'] }
+  @memos = read_memos
   erb :index
 end
 
+def post_memo(title, content)
+  conn.exec_params('INSERT INTO memos(title, content) VALUES ($1, $2);', [title, content])
+end
+
 post '/memos' do
-  memos = { 'id' => SecureRandom.uuid, 'title' => params[:title], 'content' => params[:content], 'time' => Time.now }
-  File.open("data/memos_#{memos['id']}.json", 'w') { |file| JSON.dump(memos, file) }
-  redirect to("/memos/#{memos['id']}")
+  title = params[:title]
+  content = params[:content]
+  post_memo(title, content)
+  redirect '/memos'
 end
 
 get '/memos/new' do
   erb :new
 end
 
+def read_memo(id)
+  result = conn.exec_params('SELECT * FROM memos WHERE id = $1;', [id])
+  result.first
+end
+
 get '/memos/:id' do
-  read_memo_json
+  memo = read_memo(params[:id])
+  @memo = memo
   erb :detail
 end
 
 get '/memos/:id/edit' do
-  read_memo_json
+  memo = read_memo(params[:id])
+  @memo = memo
   erb :edit
 end
 
-patch '/memos/:id/edit' do
-  file_path = get_saved_memo_path(params[:id])
-  File.open(file_path, 'w') do |file|
-    memos = { 'id' => params[:id], 'title' => params[:title], 'content' => params[:content], 'time' => Time.now }
-    JSON.dump(memos, file)
-  end
-  redirect to("/memos/#{params[:id]}")
+def edit_memo(title, content, id)
+  conn.exec_params('UPDATE memos SET title = $1, content = $2 WHERE id = $3;', [title, content, id])
+end
+
+patch '/memos/:id' do
+  title = params[:title]
+  content = params[:content]
+  edit_memo(title, content, params[:id])
+  redirect "/memos/#{params[:id]}"
+end
+
+def delete_memo(id)
+  conn.exec_params('DELETE FROM memos WHERE id = $1;', [id])
 end
 
 delete '/memos/:id' do
-  file_path = get_saved_memo_path(params[:id])
-  File.delete(file_path)
-  redirect to('/memos')
+  delete_memo(params[:id])
+  redirect '/memos'
 end
 
 not_found do
